@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "211783907024",
+    "firebase_url": "https://simplechatapp-eea70.firebaseio.com",
+    "project_id": "simplechatapp-eea70",
+    "storage_bucket": "simplechatapp-eea70.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:211783907024:android:e6dbcb6e0d57908f9e10d5",
+        "android_client_info": {
+          "package_name": "com.ajn.expensetracker.expensetracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "211783907024-ne2kjsb59hb82bs9vms2hpfgvr6e66k4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ajn.expensetracker.expensetracker",
+            "certificate_hash": "cd647dcb57a6b5f8f3b99c55d8072f9474c6aef4"
+          }
+        },
+        {
+          "client_id": "211783907024-r8kagrifd85h45jtmkok49isual7e8gf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX0OBnCeqqYaoeU84YRSEi36t5btwkt4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "211783907024-r8kagrifd85h45jtmkok49isual7e8gf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
