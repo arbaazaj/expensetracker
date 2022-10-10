@@ -1,3 +1,3 @@
-# expensetracker
+# Expense Tracker App
 
-A full fledged expense tracking app.
+A full fledged expense tracking app built using Flutter.
