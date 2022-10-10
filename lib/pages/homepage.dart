@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expensetracker/pages/login_page.dart';
 import 'package:expensetracker/utils/error_string_interpolation.dart';
+import 'package:expensetracker/widgets/custom_floating_action_button.dart';
 import 'package:expensetracker/widgets/top_card_alternative.dart';
 import 'package:expensetracker/widgets/transaction_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -37,10 +40,13 @@ class HomePageState extends State<HomePage> {
   FocusNode focusNode = FocusNode();
   FocusNode focusNode2 = FocusNode();
 
+  // Scroll Controller for the list to hide fab on scroll.
+  final ScrollController _controller = ScrollController();
+
   // Firebase Firestore api calls.
   final Stream<QuerySnapshot> _expensesRef = FirebaseFirestore.instance
       .collection('expenses')
-      .orderBy('timestamp')
+      .orderBy('timestamp', descending: true)
       .snapshots();
   final Stream<DocumentSnapshot> _expenseTotalStreamRef = FirebaseFirestore
       .instance
@@ -52,47 +58,62 @@ class HomePageState extends State<HomePage> {
   final CollectionReference _expenseTotalCollectionRef =
       FirebaseFirestore.instance.collection('expenseTotal');
 
-  // Calculate Total Income.
-  void calculateIncome() async {
-    await _collectionRef.where('type', isEqualTo: 'income').get().then(
-      (res) {
-        for (var element in res.docs) {
-          var amount = element.get('amount');
-          _sumOfAllIncome = _sumOfAllIncome + int.parse(amount.toString());
-        }
-        calculateExpenses();
-      },
-      onError: (e) {
-        if (kDebugMode) {
-          print("Error completing: $e");
-        }
-      },
-    );
+  // Call to collection of expenses.
+  Future<QuerySnapshot<Object?>> callRef() async {
+    final response = await _collectionRef.get();
+    return response;
   }
 
-  // Calculate Total Expenses.
+  // Calculating and updating documents.
   void calculateExpenses() async {
-    await _collectionRef.where('type', isEqualTo: 'expense').get().then(
-        (value) {
-      for (var expense in value.docs) {
-        var amount = expense.get('amount');
-        _sumOfAllExpense = _sumOfAllExpense + int.parse(amount.toString());
-      }
-      _balanceLeft = _sumOfAllIncome - _sumOfAllExpense;
-      addTotalExpensesToFirestore();
-    }, onError: (error) {
+    // For income.
+    try {
+      callRef().then((response) {
+        for (var income in response.docs) {
+          if (income.get('type') == 'income') {
+            _sumOfAllIncome =
+                _sumOfAllIncome + int.parse(income.get('amount').toString());
+          }
+        }
+        _balanceLeft = _sumOfAllIncome;
+        addTotalExpensesToFirestore();
+      });
+    } catch (e) {
       if (kDebugMode) {
-        print("Error completing: $error");
+        print('Error: $e');
       }
-    });
+    }
+    // For expense.
+    try {
+      callRef().then((response) {
+        for (var expense in response.docs) {
+          if (expense.get('type') == 'expense') {
+            _sumOfAllExpense =
+                _sumOfAllExpense + int.parse(expense.get('amount').toString());
+          }
+        }
+        _sumOfAllIncome = _sumOfAllIncome - _sumOfAllExpense;
+        _balanceLeft = _sumOfAllIncome;
+        addTotalExpensesToFirestore();
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error: $e');
+      }
+    }
   }
 
+  // Call to collection of expenseTotal and update it.
   void addTotalExpensesToFirestore() async {
     try {
       await _expenseTotalCollectionRef.doc('total').update({
         'balance': _balanceLeft,
         'income': _sumOfAllIncome,
         'expense': _sumOfAllExpense
+      }).then((value) {
+        _balanceLeft = 0;
+        _sumOfAllIncome = 0;
+        _sumOfAllExpense = 0;
       });
     } catch (e) {
       if (kDebugMode) {
@@ -115,9 +136,6 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-      calculateIncome();
-    });
     checkIfUserIsSignedIn();
   }
 
@@ -141,6 +159,7 @@ class HomePageState extends State<HomePage> {
             top: 10.0, left: 16.0, right: 16.0, bottom: 8.0),
         child: Column(
           children: [
+            // Top card with balance, income and expense data fetching in realtime from expenseTotal collection.
             StreamBuilder<DocumentSnapshot>(
                 stream: _expenseTotalStreamRef,
                 builder: (context, snapshot) {
@@ -150,6 +169,7 @@ class HomePageState extends State<HomePage> {
                       ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+                  // Top card to display data.
                   return TopCardAlternative(
                     balance: snapshot.data!.get('balance'),
                     income: snapshot.data!.get('income'),
@@ -161,6 +181,7 @@ class HomePageState extends State<HomePage> {
                 child: Column(
                   children: [
                     Expanded(
+                      // Listview with expenses collection.
                       child: StreamBuilder<QuerySnapshot>(
                           stream: _expensesRef,
                           builder: (context, snapshot) {
@@ -186,6 +207,7 @@ class HomePageState extends State<HomePage> {
                                   child: CircularProgressIndicator());
                             }
                             return ListView(
+                              controller: _controller,
                               children: snapshot.data!.docs
                                   .map((DocumentSnapshot document) {
                                 Map<String, dynamic> data =
@@ -209,7 +231,9 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      // Custom FAB with hide on scroll feature.
+      floatingActionButton: CustomFAB(
+        controller: _controller,
         onPressed: () => _buildTransactionDialog(context),
         child: const Icon(Icons.add),
       ),
@@ -224,6 +248,8 @@ class HomePageState extends State<HomePage> {
         setState(() {
           isUserSignedIn = false;
         });
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (context) => const LoginPage()));
       });
     } else {
       Navigator.of(context)
@@ -231,6 +257,7 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  // onPressed Action for fab which opens a dialog with a form including controls to add a transaction.
   void _buildTransactionDialog(BuildContext context) {
     showDialog(
         barrierDismissible: false,
@@ -348,12 +375,14 @@ class HomePageState extends State<HomePage> {
         });
   }
 
-  Future _addExpenseTransaction() async {
+  // onPressed Enter action on the form control inside dialog box.
+  // Adds a new transaction to the expenses collection also updates the expenseTotal collection.
+  void _addExpenseTransaction() async {
     if (_formKey.currentState!.validate()) {
       String name = _textControllerItem.text;
       String amount = _textControllerAmount.text;
       String type = _isIncome ? 'income' : 'expense';
-      return await _collectionRef.add({
+      await _collectionRef.add({
         'name': name,
         'amount': amount,
         'type': type,
@@ -362,10 +391,7 @@ class HomePageState extends State<HomePage> {
         Navigator.of(context).pop();
         _textControllerItem.clear();
         _textControllerAmount.clear();
-        setState(() {
-          calculateExpenses();
-          addTotalExpensesToFirestore();
-        });
+        calculateExpenses();
       }).catchError((onError) {
         if (kDebugMode) {
           print(onError);
