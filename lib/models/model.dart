@@ -7,7 +7,7 @@ class Expense {
 
   Expense({this.name, this.amount, this.type});
 
-  factory Expense.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+  factory Expense.fromFirestore(DocumentSnapshot snapshot) {
     return Expense(
       name: snapshot['name'],
       amount: snapshot['amount'],

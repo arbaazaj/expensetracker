@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expensetracker/pages/login_page.dart';
+import 'package:expensetracker/pages/pie_chart_view.dart';
 import 'package:expensetracker/utils/error_string_interpolation.dart';
 import 'package:expensetracker/widgets/custom_floating_action_button.dart';
 import 'package:expensetracker/widgets/top_card_alternative.dart';
@@ -10,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -152,6 +154,10 @@ class HomePageState extends State<HomePage> {
                 ? const Icon(Icons.logout, semanticLabel: 'Account')
                 : const Icon(Icons.account_circle, semanticLabel: 'Logout'),
           ),
+          IconButton(
+            onPressed: () => Get.to(() => const PieChartView()),
+            icon: const Icon(Icons.pie_chart),
+          ),
         ],
       ),
       body: Padding(
@@ -243,13 +249,11 @@ class HomePageState extends State<HomePage> {
   void onPressedAccountIcon(BuildContext context) {
     if (isUserSignedIn) {
       FirebaseAuth.instance.signOut().then((value) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Logging Out...')));
+        Get.snackbar('>', 'Logging out...');
         setState(() {
           isUserSignedIn = false;
         });
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => const LoginPage()));
+        Get.toNamed('/login');
       });
     } else {
       Navigator.of(context)
