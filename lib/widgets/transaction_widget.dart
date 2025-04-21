@@ -5,12 +5,12 @@ class TransactionCard extends StatelessWidget {
   final String money;
   final String expenseOrIncome;
 
-  const TransactionCard(
-      {Key? key,
-      required this.transactionName,
-      required this.money,
-      required this.expenseOrIncome})
-      : super(key: key);
+  const TransactionCard({
+    super.key,
+    required this.transactionName,
+    required this.money,
+    required this.expenseOrIncome,
+  });
 
   @override
   Widget build(BuildContext context) {

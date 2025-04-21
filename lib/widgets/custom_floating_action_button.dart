@@ -6,8 +6,12 @@ class CustomFAB extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget? child;
 
-  const CustomFAB({Key? key, required this.controller, this.onPressed, required this.child})
-      : super(key: key);
+  const CustomFAB({
+    super.key,
+    required this.controller,
+    this.onPressed,
+    required this.child,
+  });
 
   @override
   State<CustomFAB> createState() => _CustomFABState();

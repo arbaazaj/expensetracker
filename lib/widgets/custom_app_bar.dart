@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-
   final double size;
 
-  const CustomAppBar({Key? key, this.size = 100}) : super(key: key);
+  const CustomAppBar({super.key, this.size = 100});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 24.0),
+          padding: EdgeInsets.only(top: 24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Padding(
                 padding: EdgeInsets.only(top: 8.0, left: 16),
                 child: Text('Welcome'),
@@ -29,7 +28,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(top: 24, right: 16.0),
           child: CircleAvatar(),
         )

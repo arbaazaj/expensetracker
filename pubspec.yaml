@@ -1,6 +1,5 @@
 name: expensetracker
-description: A full fledged expense tracking app
-
+description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -12,13 +11,15 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # build by specifying --build-name and --build-number, respectively.
 # In Android, build-name is used as versionName while build-number used as versionCode.
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.6 <3.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,19 +31,18 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.5
-  gsheets: ^0.4.2
-  firebase_core: ^1.24.0
-  firebase_auth: ^3.11.0
-  cloud_firestore: ^3.5.0
-  google_sign_in: ^5.4.2
-  font_awesome_flutter: ^10.2.1
-  google_fonts: ^3.0.1
-  get:
-  fl_chart: ^0.55.2
+  cupertino_icons: ^1.0.8
+  font_awesome_flutter: ^10.8.0
+  google_fonts: ^6.2.1
+  get: any
+  fl_chart: ^0.69.0
+  supabase_flutter: any
+  flutter_dotenv: any
+  flutter_bloc: any
+  equatable: any
+  intl: any
 
 dev_dependencies:
   flutter_test:
@@ -53,7 +53,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,23 +70,20 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware
+  # https://flutter.dev/to/resolution-aware-images
 
   # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
+  # https://flutter.dev/to/asset-from-package
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  fonts:
-    - family: PTSansCaption
-      fonts:
-        - asset: assets/fonts/PTSansCaption-Regular.ttf
-        - asset: assets/fonts/PTSansCaption-Bold.ttf
   # fonts:
   #   - family: Schyler
   #     fonts:
@@ -99,5 +96,10 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
+  fonts:
+    - family: PTSansCaption
+      fonts:
+        - asset: assets/fonts/PTSansCaption-Regular.ttf
+        - asset: assets/fonts/PTSansCaption-Bold.ttf
   # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
+  # see https://flutter.dev/to/font-from-package

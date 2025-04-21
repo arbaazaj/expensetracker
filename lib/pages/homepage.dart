@@ -1,406 +1,273 @@
-import 'dart:async';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:expensetracker/pages/login_page.dart';
+import 'package:expensetracker/blocs/authentication/auth_bloc.dart';
+import 'package:expensetracker/blocs/balance/balance_bloc.dart';
+import 'package:expensetracker/blocs/expense/expense_bloc.dart';
+import 'package:expensetracker/pages/auth_page.dart';
 import 'package:expensetracker/pages/pie_chart_view.dart';
-import 'package:expensetracker/utils/error_string_interpolation.dart';
 import 'package:expensetracker/widgets/custom_floating_action_button.dart';
-import 'package:expensetracker/widgets/top_card_alternative.dart';
-import 'package:expensetracker/widgets/transaction_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:expensetracker/widgets/top_card_ui/top_card_alternative.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   HomePageState createState() => HomePageState();
 }
 
 class HomePageState extends State<HomePage> {
-  // Initialize Firestore.
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  // collect user input
-  final _textControllerAmount = TextEditingController();
-  final _textControllerItem = TextEditingController();
-
-  // Form Global key to manage dialog state.
-  final _formKey = GlobalKey<FormState>();
-
-  // Variables.
-  bool _isIncome = false;
-  bool isUserSignedIn = false;
-  int _sumOfAllIncome = 0;
-  int _sumOfAllExpense = 0;
-  int _balanceLeft = 0;
-
-  // Keyboard focus
-  FocusNode focusNode = FocusNode();
-  FocusNode focusNode2 = FocusNode();
-
   // Scroll Controller for the list to hide fab on scroll.
   final ScrollController _controller = ScrollController();
 
-  // Firebase Firestore api calls.
-  final Stream<QuerySnapshot> _expensesRef = FirebaseFirestore.instance
-      .collection('expenses')
-      .orderBy('timestamp', descending: true)
-      .snapshots();
-  final Stream<DocumentSnapshot> _expenseTotalStreamRef = FirebaseFirestore
-      .instance
-      .collection('expenseTotal')
-      .doc('total')
-      .snapshots();
-  final CollectionReference _collectionRef =
-      FirebaseFirestore.instance.collection('expenses');
-  final CollectionReference _expenseTotalCollectionRef =
-      FirebaseFirestore.instance.collection('expenseTotal');
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  DateTime? _selectedDate;
 
-  // Call to collection of expenses.
-  Future<QuerySnapshot<Object?>> callRef() async {
-    final response = await _collectionRef.get();
-    return response;
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _categoryController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
-  // Calculating and updating documents.
-  void calculateExpenses() async {
-    // For income.
-    try {
-      callRef().then((response) {
-        for (var income in response.docs) {
-          if (income.get('type') == 'income') {
-            _sumOfAllIncome =
-                _sumOfAllIncome + int.parse(income.get('amount').toString());
-          }
-        }
-        _balanceLeft = _sumOfAllIncome;
-        addTotalExpensesToFirestore();
+  void _presentDatePicker() {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    ).then((pickedDate) {
+      if (pickedDate == null) {
+        return;
+      }
+      setState(() {
+        _selectedDate = pickedDate;
       });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error: $e');
-      }
-    }
-    // For expense.
-    try {
-      callRef().then((response) {
-        for (var expense in response.docs) {
-          if (expense.get('type') == 'expense') {
-            _sumOfAllExpense =
-                _sumOfAllExpense + int.parse(expense.get('amount').toString());
-          }
-        }
-        _sumOfAllIncome = _sumOfAllIncome - _sumOfAllExpense;
-        _balanceLeft = _sumOfAllIncome;
-        addTotalExpensesToFirestore();
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error: $e');
-      }
-    }
-  }
-
-  // Call to collection of expenseTotal and update it.
-  void addTotalExpensesToFirestore() async {
-    try {
-      await _expenseTotalCollectionRef.doc('total').update({
-        'balance': _balanceLeft,
-        'income': _sumOfAllIncome,
-        'expense': _sumOfAllExpense
-      }).then((value) {
-        _balanceLeft = 0;
-        _sumOfAllIncome = 0;
-        _sumOfAllExpense = 0;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
-    }
-  }
-
-  // Check if user is signed in.
-  Future checkIfUserIsSignedIn() async {
-    FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      if (user != null) {
-        setState(() {
-          isUserSignedIn = true;
-        });
-      }
     });
+  }
+
+  void _submitExpense() {
+    if (_formKey.currentState!.validate()) {
+      final amount = double.parse(_amountController.text);
+      final category = _categoryController.text;
+      final description = _descriptionController.text;
+
+      context.read<ExpenseBloc>().add(AddExpense(
+            amount: amount,
+            category: category,
+            description: description,
+            date: _selectedDate ?? DateTime.now(),
+          ));
+
+      _amountController.clear();
+      _categoryController.clear();
+      _descriptionController.clear();
+      setState(() {
+        _selectedDate = null;
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    checkIfUserIsSignedIn();
+    context.read<AuthBloc>().add(CheckIfUserIsLoggedIn());
+    context.read<ExpenseBloc>().add(FetchExpenses());
+    context.read<BalanceBloc>().add(CalculateBalance());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[750],
-      appBar: AppBar(
-        title: const Text('Expense Tracker'),
-        actions: [
-          IconButton(
-            onPressed: () => onPressedAccountIcon(context),
-            icon: isUserSignedIn
-                ? const Icon(Icons.logout, semanticLabel: 'Account')
-                : const Icon(Icons.account_circle, semanticLabel: 'Logout'),
-          ),
-          IconButton(
-            onPressed: () => Get.to(() => const PieChartView()),
-            icon: const Icon(Icons.pie_chart),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.only(
-            top: 10.0, left: 16.0, right: 16.0, bottom: 8.0),
-        child: Column(
-          children: [
-            // Top card with balance, income and expense data fetching in realtime from expenseTotal collection.
-            StreamBuilder<DocumentSnapshot>(
-                stream: _expenseTotalStreamRef,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  // Top card to display data.
-                  return TopCardAlternative(
-                    balance: snapshot.data!.get('balance'),
-                    income: snapshot.data!.get('income'),
-                    expense: snapshot.data!.get('expense'),
-                  );
-                }),
-            Expanded(
-              child: Center(
-                child: Column(
-                  children: [
-                    Expanded(
-                      // Listview with expenses collection.
-                      child: StreamBuilder<QuerySnapshot>(
-                          stream: _expensesRef,
-                          builder: (context, snapshot) {
-                            if (snapshot.hasError) {
-                              if (snapshot.error
-                                  .toString()
-                                  .contains(firestorePermissionDeniedError)) {
-                                return Center(
-                                  child: Text('You need to Sign in first',
-                                      style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500)),
-                                );
-                              }
-                              return Text(
-                                  'Something went wrong: ${snapshot.error}',
-                                  style: TextStyle(color: Colors.grey[700]));
-                            }
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-                            return ListView(
-                              controller: _controller,
-                              children: snapshot.data!.docs
-                                  .map((DocumentSnapshot document) {
-                                Map<String, dynamic> data =
-                                    document.data()! as Map<String, dynamic>;
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: TransactionCard(
-                                    transactionName: data['name'],
-                                    money: '${data['amount']}',
-                                    expenseOrIncome: data['type'],
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          }),
-                    ),
-                  ],
-                ),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          Get.to(() => const AuthPage());
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey[750],
+        appBar: AppBar(
+          title: const Row(
+            children: [
+              Icon(
+                Icons.currency_rupee,
+                color: Colors.green,
               ),
+              SizedBox(
+                width: 2.0,
+              ),
+              Flexible(
+                  child: Text(
+                'Expense Tracker',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              )),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.account_circle,
+                semanticLabel: 'Logout',
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                Get.to(() => const PieChartView());
+              },
+              icon: const Icon(Icons.pie_chart),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.more_vert),
             ),
           ],
         ),
-      ),
-      // Custom FAB with hide on scroll feature.
-      floatingActionButton: CustomFAB(
-        controller: _controller,
-        onPressed: () => _buildTransactionDialog(context),
-        child: const Icon(Icons.add),
+        body: BlocBuilder<ExpenseBloc, ExpenseState>(
+          builder: (context, state) {
+            if (state is ExpenseLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is ExpenseLoaded) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  children: [
+                    BlocBuilder<BalanceBloc, BalanceState>(
+                        builder: (context, state) {
+                      if (state is BalanceLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      if (state is BalanceError) {
+                        return Center(
+                          child: Text('Error: ${state.message}'),
+                        );
+                      }
+                      if (state is BalanceCalculated) {
+                        return TopCardAlternative(
+                          balance: state.balance.toInt(),
+                          income: state.income.toInt(),
+                          expense: state.expense.toInt(),
+                        );
+                      }
+                      return const SizedBox();
+                    }),
+                    Flexible(
+                      child: ListView.builder(
+                        itemCount: state.expenses.length,
+                        itemBuilder: (context, index) {
+                          final expense = state.expenses[index];
+                          return ListTile(
+                            title: Text(expense.category),
+                            subtitle: Text(
+                              DateFormat('dd/MM/yyyy')
+                                  .format(expense.date), // Format date
+                            ),
+                            trailing: Text(
+                              '\$${expense.amount.toStringAsFixed(2)}',
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else if (state is ExpenseError) {
+              return Center(child: Text(state.message));
+            } else {
+              return const Center(child: Text('No expenses yet.'));
+            }
+          },
+        ),
+        // Custom FAB with hide on scroll feature.
+        floatingActionButton: CustomFAB(
+          controller: _controller,
+          onPressed: () => _buildTransactionModal(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
 
-  void onPressedAccountIcon(BuildContext context) {
-    if (isUserSignedIn) {
-      FirebaseAuth.instance.signOut().then((value) {
-        Get.snackbar('>', 'Logging out...');
-        setState(() {
-          isUserSignedIn = false;
-        });
-        Get.toNamed('/login');
-      });
-    } else {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => const LoginPage()));
-    }
-  }
-
-  // onPressed Action for fab which opens a dialog with a form including controls to add a transaction.
-  void _buildTransactionDialog(BuildContext context) {
-    showDialog(
-        barrierDismissible: false,
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-            builder: (BuildContext context, setState) {
-              return AlertDialog(
-                title: const Text('Add Transaction'),
-                content: SingleChildScrollView(
-                  child: Column(
+  // onPressed Action for fab which opens a dialog with a form including
+  // controls to add a transaction.
+  void _buildTransactionModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter an amount';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid number';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _categoryController,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a category';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Text('Expense'),
-                          Switch(
-                            activeColor: Colors.green,
-                            inactiveThumbColor: Colors.red,
-                            value: _isIncome,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _isIncome = newValue;
-                              });
-                            },
-                          ),
-                          const Text('Income'),
-                        ],
+                      Expanded(
+                        child: Text(
+                          _selectedDate == null
+                              ? 'No Date Chosen!'
+                              : 'Picked Date: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                        ),
                       ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Form(
-                              key: _formKey,
-                              child: TextFormField(
-                                focusNode: focusNode,
-                                onEditingComplete: () {
-                                  setState(() {
-                                    focusNode.nextFocus();
-                                  });
-                                },
-                                inputFormatters: <TextInputFormatter>[
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9]'),
-                                  ),
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
-                                textInputAction: TextInputAction.next,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  hintText: 'Amount?',
-                                ),
-                                validator: (text) {
-                                  if (text == null || text.isEmpty) {
-                                    return 'Enter an amount';
-                                  }
-                                  return null;
-                                },
-                                controller: _textControllerAmount,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              focusNode: focusNode2,
-                              onSubmitted: (_) {
-                                setState(() {
-                                  focusNode2.unfocus();
-                                });
-                              },
-                              textInputAction: TextInputAction.done,
-                              keyboardType: TextInputType.text,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                hintText: 'For what?',
-                              ),
-                              controller: _textControllerItem,
-                            ),
-                          ),
-                        ],
+                      TextButton(
+                        onPressed: _presentDatePicker,
+                        child: const Text(
+                          'Choose Date',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                actions: <Widget>[
-                  MaterialButton(
-                    color: Colors.grey[600],
-                    child: const Text('Cancel',
-                        style: TextStyle(color: Colors.white)),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  MaterialButton(
-                    color: Colors.grey[600],
-                    child: const Text('Enter',
-                        style: TextStyle(color: Colors.white)),
-                    onPressed: () => _addExpenseTransaction(),
-                  )
-                ],
-              );
-            },
-          );
-        });
-  }
-
-  // onPressed Enter action on the form control inside dialog box.
-  // Adds a new transaction to the expenses collection also updates the expenseTotal collection.
-  void _addExpenseTransaction() async {
-    if (_formKey.currentState!.validate()) {
-      String name = _textControllerItem.text;
-      String amount = _textControllerAmount.text;
-      String type = _isIncome ? 'income' : 'expense';
-      await _collectionRef.add({
-        'name': name,
-        'amount': amount,
-        'type': type,
-        'timestamp': Timestamp.now()
-      }).then((value) {
-        Navigator.of(context).pop();
-        _textControllerItem.clear();
-        _textControllerAmount.clear();
-        calculateExpenses();
-      }).catchError((onError) {
-        if (kDebugMode) {
-          print(onError);
-        }
-      });
-    }
+                OutlinedButton(
+                  onPressed: _submitExpense,
+                  child: const Text('Add Expense'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
