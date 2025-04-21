@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/expense.dart';
@@ -24,19 +24,11 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
           'date': event.date.toIso8601String(),
         };
 
-        final response = await _supabase.from('expenses').insert(expenseData);
-
-        if (response == null) {
-          emit(ExpenseError(message: 'Failed to add expense'));
-        } else {
-          emit(ExpenseAdded());
-        }
-
-        // await _supabase.from('expenses').insert(expenseData).then((onSuccess) {
-        //   emit(ExpenseAdded());
-        // }).catchError((onError) {
-        //   emit(ExpenseError(message: 'Failed to add expense: ${onError.toString()}'));
-        // });
+        await _supabase.from('expenses').insert(expenseData).whenComplete(() {
+          add(FetchExpenses());
+        }).catchError((onError) {
+          emit(ExpenseError(message: 'Failed to add expense: ${onError.toString()}'));
+        });
       } catch (error) {
         emit(ExpenseError(message: error.toString()));
       }

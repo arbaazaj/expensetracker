@@ -71,6 +71,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       _supabase.auth.onAuthStateChange.listen((data) {
         if (data.session == null) {
           emit(AuthUnauthenticated());
+        } else {
+          emit(AuthAuthenticated(user: data.session!.user));
         }
       });
     });

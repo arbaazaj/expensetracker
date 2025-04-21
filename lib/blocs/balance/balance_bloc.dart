@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'balance_event.dart';
@@ -12,37 +12,51 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
     on<CalculateBalance>((event, emit) async {
       emit(BalanceLoading());
       try {
-        // Fetch income and expense data from Supabase
-        final incomeResponse = await _supabase
-            .from('expenses')
-            .select('amount')
-            .eq('category', 'income');
+        final userId = _supabase.auth.currentUser?.id;
 
-        // Assuming the expense category is 'expense'
-        final expenseResponse = await _supabase
+        // Fetch income and expense data from Supabase
+        final response = await _supabase
             .from('expenses')
-            .select('amount')
-            .eq('category', 'expense');
+            .select('amount, category')
+            .eq('user_id', userId!);
+
+        // Filter income data from the response
+        final List<Map<String, dynamic>> incomeList =
+            (response as List<dynamic>)
+                .map((e) => e as Map<String, dynamic>)
+                .where((e) => e['category'] == 'income')
+                .toList();
+
+        // Filter expense data from the response
+        final List<Map<String, dynamic>> expenseList =
+            (response as List<dynamic>)
+                .map((e) => e as Map<String, dynamic>)
+                .where((e) => e['category'] == 'expense')
+                .toList();
 
         // Calculate total income and expense
-        final income = (incomeResponse as List<dynamic>?)
-                ?.map((e) => (e['amount'] as num).toDouble())
-                .reduce((a, b) => a + b) ??
-            0.0;
+        double totalIncome = 0.0;
+        if (incomeList.isNotEmpty) {
+          totalIncome = incomeList
+              .map((e) => (e['amount'] as num).toDouble())
+              .reduce((a, b) => a + b);
+        }
 
         // Assuming the expense category is 'expense'
-        final expense = (expenseResponse as List<dynamic>?)
-                ?.map((e) => (e['amount'] as num).toDouble())
-                .reduce((a, b) => a + b) ??
-            0.0;
+        double totalExpense = 0.0;
+        if (expenseList.isNotEmpty) {
+          totalExpense = expenseList
+              .map((e) => (e['amount'] as num).toDouble())
+              .reduce((a, b) => a + b);
+        }
 
         // Calculate the balance
-        final balance = income - expense;
+        final balance = totalIncome - totalExpense;
 
         emit(BalanceCalculated(
           balance: balance,
-          income: income,
-          expense: expense,
+          income: totalIncome,
+          expense: totalExpense,
         ));
       } catch (error) {
         emit(BalanceError(message: error.toString()));
