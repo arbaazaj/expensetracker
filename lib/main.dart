@@ -32,10 +32,10 @@ class MyApp extends StatelessWidget {
           create: (context) => AuthBloc(),
         ),
         BlocProvider(
-          create: (context) => ExpenseBloc(),
+          create: (context) => BalanceBloc(),
         ),
         BlocProvider(
-          create: (context) => BalanceBloc(),
+          create: (context) => ExpenseBloc(context.read<BalanceBloc>()),
         ),
       ],
       child: GetMaterialApp(

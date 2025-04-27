@@ -20,6 +20,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   // Scroll Controller for the list to hide fab on scroll.
   final ScrollController _controller = ScrollController();
+  final ScrollController _listController = ScrollController();
 
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
@@ -63,6 +64,8 @@ class HomePageState extends State<HomePage> {
           ));
       modalSetState(() {
         context.read<BalanceBloc>().add(CalculateBalance());
+        _listController.animateTo(0.0,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
         _amountController.clear();
         _descriptionController.clear();
         _selectedDate = null;
@@ -75,6 +78,8 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _listController.animateTo(0.0,
+        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
     context.read<AuthBloc>().add(CheckIfUserIsLoggedIn());
   }
 
@@ -177,8 +182,10 @@ class HomePageState extends State<HomePage> {
                     }),
                     const SizedBox(height: 10),
                     Flexible(
+
                       child: ListView.builder(
-                        reverse: true,
+                        controller: _listController,
+                        reverse: false,
                         shrinkWrap: true,
                         itemCount: state.expenses.length,
                         itemBuilder: (context, index) {
@@ -199,8 +206,10 @@ class HomePageState extends State<HomePage> {
                               DateFormat('dd/MM/yyyy')
                                   .format(expense.date), // Format date
                             ),
-                            trailing: Text(expense.category == 'income' ?
-                              '+\$${expense.amount.toStringAsFixed(2)}' : '-\$${expense.amount.toStringAsFixed(2)}',
+                            trailing: Text(
+                              expense.category == 'income'
+                                  ? '+\$${expense.amount.toStringAsFixed(2)}'
+                                  : '-\$${expense.amount.toStringAsFixed(2)}',
                               style: TextStyle(
                                 color: expense.category == 'income'
                                     ? Colors.green

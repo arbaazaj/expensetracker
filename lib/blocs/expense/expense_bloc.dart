@@ -1,3 +1,4 @@
+import 'package:expensetracker/blocs/balance/balance_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,8 +10,10 @@ part 'expense_state.dart';
 
 class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final BalanceBloc _balanceBloc;
 
-  ExpenseBloc() : super(ExpenseInitial()) {
+
+  ExpenseBloc(this._balanceBloc) : super(ExpenseInitial()) {
 
     // Add expense.
     on<AddExpense>((event, emit) async {
@@ -26,6 +29,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
         await _supabase.from('expenses').insert(expenseData).whenComplete(() {
           add(FetchExpenses());
+
         }).catchError((onError) {
           emit(ExpenseError(message: 'Failed to add expense: ${onError.toString()}'));
         });
@@ -42,7 +46,8 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
             .from('expenses')
             .select()
             .eq('user_id', _supabase.auth.currentUser!.id)
-            .order('date', ascending: false);
+
+            .order('created_at', ascending: false);
         if (response.isEmpty) {
           emit(
             ExpenseError(message: 'No expenses found'),
@@ -52,6 +57,8 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
               .map((expenseData) => Expense.fromJson(expenseData))
               .toList();
           emit(ExpenseLoaded(expenses: expenses));
+          // I want to call the balance bloc to update the balance using CalculateBalance event.
+          _balanceBloc.add(CalculateBalance());
         }
       } catch (e) {
         emit(ExpenseError(message: e.toString()));
