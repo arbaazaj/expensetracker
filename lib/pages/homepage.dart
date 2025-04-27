@@ -25,6 +25,7 @@ class HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _categoryController = TextEditingController();
   DateTime? _selectedDate;
   bool _isIncome = false;
 
@@ -32,6 +33,7 @@ class HomePageState extends State<HomePage> {
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -55,10 +57,12 @@ class HomePageState extends State<HomePage> {
     if (_formKey.currentState!.validate()) {
       final amount = double.parse(_amountController.text);
       final description = _descriptionController.text;
+      final category = _categoryController.text;
 
       context.read<ExpenseBloc>().add(AddExpense(
             amount: amount,
-            category: _isIncome ? 'income' : 'expense',
+            type: _isIncome ? 'income' : 'expense',
+            category: category,
             description: description,
             date: _selectedDate ?? DateTime.now(),
           ));
@@ -182,7 +186,6 @@ class HomePageState extends State<HomePage> {
                     }),
                     const SizedBox(height: 10),
                     Flexible(
-
                       child: ListView.builder(
                         controller: _listController,
                         reverse: false,
@@ -190,32 +193,55 @@ class HomePageState extends State<HomePage> {
                         itemCount: state.expenses.length,
                         itemBuilder: (context, index) {
                           final expense = state.expenses[index];
-                          return ListTile(
-                            title: Text(
-                              expense.description == null
-                                  ? expense.category
-                                  : expense.description!,
-                              style: TextStyle(
-                                color: expense.category == 'income'
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontWeight: FontWeight.bold,
+
+                          return Dismissible(
+                            key: Key(expense.id),
+                            background: Container(
+                              color: Colors.red,
+                              child: const Icon(Icons.delete),
+                            ),
+                            direction: DismissDirection.endToStart,
+                            onDismissed: (direction) {
+                              if (direction == DismissDirection.endToStart) {
+                                context
+                                    .read<ExpenseBloc>()
+                                    .add(DeleteExpense(id: expense.id));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                    Text('${expense.description} deleted'),
+                                  ),
+                                );
+                              }
+                            },
+                            child: ListTile(
+                              isThreeLine: true,
+                              title: Text(
+                                expense.description == null
+                                    ? expense.type
+                                    : expense.description!,
+                                style: TextStyle(
+                                  color: expense.type == 'income'
+                                      ? Colors.green
+                                      : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            subtitle: Text(
-                              DateFormat('dd/MM/yyyy')
-                                  .format(expense.date), // Format date
-                            ),
-                            trailing: Text(
-                              expense.category == 'income'
-                                  ? '+\$${expense.amount.toStringAsFixed(2)}'
-                                  : '-\$${expense.amount.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: expense.category == 'income'
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
+                              subtitle: Text(
+                                DateFormat('${expense.category}\ndd/MM/yyyy')
+                                    .format(expense.date), // Format date
+                              ),
+                              trailing: Text(
+                                expense.type == 'income'
+                                    ? '+\$${expense.amount.toStringAsFixed(2)}'
+                                    : '-\$${expense.amount.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: expense.type == 'income'
+                                      ? Colors.green
+                                      : Colors.red,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           );
@@ -246,6 +272,7 @@ class HomePageState extends State<HomePage> {
   // controls to add a transaction.
   void _buildTransactionModal(BuildContext context) {
     showModalBottomSheet(
+      useSafeArea: true,
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -260,6 +287,7 @@ class HomePageState extends State<HomePage> {
                     TextFormField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(labelText: 'Amount'),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -272,31 +300,83 @@ class HomePageState extends State<HomePage> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Switch for income/expense
-                        Text('Category:'),
-                        Row(
-                          children: [
-                            const Text('Expense'),
-                            const SizedBox(width: 4),
-                            Switch(
-                              value: _isIncome,
-                              onChanged: (value) {
-                                modalSetState(() {
-                                  _isIncome = value;
-                                });
-                              },
+                    Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Switch for income/expense
+                          Text(
+                            'Type:',
+                            style: TextStyle(
+                              fontSize: 16,
                             ),
-                            const SizedBox(width: 4),
-                            const Text('Income'),
-                          ],
-                        ),
-                      ],
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                'Expense',
+                                style: !_isIncome
+                                    ? TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      )
+                                    : TextStyle(
+                                        fontSize: 16,
+                                      ),
+                              ),
+                              const SizedBox(width: 4),
+                              Switch(
+                                value: _isIncome,
+                                inactiveTrackColor: Colors.transparent,
+                                thumbColor: WidgetStatePropertyAll(
+                                  _isIncome ? Colors.green : Colors.red,
+                                ),
+                                activeColor: Colors.transparent,
+                                trackOutlineColor: WidgetStatePropertyAll(
+                                  _isIncome ? Colors.green : Colors.red,
+                                ),
+                                onChanged: (value) {
+                                  modalSetState(() {
+                                    _isIncome = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Income',
+                                style: _isIncome
+                                    ? TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      )
+                                    : TextStyle(
+                                        fontSize: 16,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _categoryController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                      ),
                     ),
                     TextFormField(
                       controller: _descriptionController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
                       decoration:
                           const InputDecoration(labelText: 'Description'),
                     ),
@@ -309,6 +389,9 @@ class HomePageState extends State<HomePage> {
                               _selectedDate == null
                                   ? 'No Date Chosen!'
                                   : 'Picked Date: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           TextButton(
@@ -319,7 +402,10 @@ class HomePageState extends State<HomePage> {
                             },
                             child: const Text(
                               'Choose Date',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],

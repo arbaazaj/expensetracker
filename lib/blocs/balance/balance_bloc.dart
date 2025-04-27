@@ -17,21 +17,21 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
         // Fetch income and expense data from Supabase
         final response = await _supabase
             .from('expenses')
-            .select('amount, category')
+            .select('amount, type')
             .eq('user_id', userId!);
 
         // Filter income data from the response
         final List<Map<String, dynamic>> incomeList =
             (response as List<dynamic>)
                 .map((e) => e as Map<String, dynamic>)
-                .where((e) => e['category'] == 'income')
+                .where((e) => e['type'] == 'income')
                 .toList();
 
         // Filter expense data from the response
         final List<Map<String, dynamic>> expenseList =
             (response as List<dynamic>)
                 .map((e) => e as Map<String, dynamic>)
-                .where((e) => e['category'] == 'expense')
+                .where((e) => e['type'] == 'expense')
                 .toList();
 
         // Calculate total income and expense

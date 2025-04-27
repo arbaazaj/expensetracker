@@ -22,6 +22,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
         final expenseData = {
           'user_id': _supabase.auth.currentUser!.id,
           'amount': event.amount,
+          'type': event.type,
           'category': event.category,
           'description': event.description,
           'date': event.date.toIso8601String(),
@@ -62,6 +63,24 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
         }
       } catch (e) {
         emit(ExpenseError(message: e.toString()));
+      }
+    });
+
+    // Delete expense.
+    on<DeleteExpense>((event, emit) async {
+      emit(ExpenseLoading());
+      try {
+        await _supabase
+            .from('expenses')
+            .delete()
+            .eq('id', event.id)
+            .whenComplete(() {
+          add(FetchExpenses());
+        }).catchError((onError) {
+          emit(ExpenseError(message: 'Failed to delete expense: ${onError.toString()}'));
+        });
+      } catch (error) {
+        emit(ExpenseError(message: error.toString()));
       }
     });
   }
