@@ -23,11 +23,10 @@ The **Expense Tracker App** is a comprehensive solution for managing your person
 ## Screenshots
 
 <p align="center">
-  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/_main.jpg?raw=true" alt="Main Screen" width="300px" />
-  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/add_expense.jpg?raw=true" alt="Add Expense Screen" width="300px" />
-  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/add_income.jpg?raw=true" alt="Add Income Screen" width="300px" />
-  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/add_transaction.jpg?raw=true" alt="Add Transaction Screen" width="300px" />
-  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/login.jpg?raw=true" alt="Login Screen" width="300px" />
+  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/homepage.png?raw=true" alt="Main Screen" width="300px" />
+  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/add_transaction.png?raw=true" alt="Add Transaction Screen" width="300px" />
+  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/login_sign_up_screen.png?raw=true" alt="Login/ Sign Up Screen" width="300px" />
+  <img src="https://github.com/arbaazaj/expensetracker/raw/master/screenshots/pie_chart.png?raw=true" alt="Pie Chart Screen" width="300px" />
 </p>
 
 ---
