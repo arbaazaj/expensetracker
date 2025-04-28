@@ -38,6 +38,7 @@ dependencies:
   google_fonts: ^6.2.1
   get: any
   fl_chart: ^0.69.0
+  shared_preferences: ^2.5.3
   supabase_flutter: any
   flutter_dotenv: any
   flutter_bloc: any

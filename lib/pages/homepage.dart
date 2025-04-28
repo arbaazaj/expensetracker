@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -82,8 +83,6 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _listController.animateTo(0.0,
-        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
     context.read<AuthBloc>().add(CheckIfUserIsLoggedIn());
   }
 
@@ -139,6 +138,20 @@ class HomePageState extends State<HomePage> {
                   position: const RelativeRect.fromLTRB(20.0, 100.0, 0.0, 0.0),
                   context: context,
                   items: [
+                    PopupMenuItem(
+                      value: 'Switch Theme',
+                      child: Text('Switch Theme'),
+                      onTap: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        if (Get.isDarkMode) {
+                          Get.changeTheme(ThemeData.light());
+                          await prefs.setBool('isDarkMode', false);
+                        } else {
+                          Get.changeTheme(ThemeData.dark());
+                          await prefs.setBool('isDarkMode', true);
+                        }
+                      },
+                    ),
                     PopupMenuItem(
                       value: 'logout',
                       child: Text('Logout'),
@@ -208,8 +221,15 @@ class HomePageState extends State<HomePage> {
                                     .add(DeleteExpense(id: expense.id));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content:
-                                    Text('${expense.description} deleted'),
+                                    content: Text(
+                                      '"${expense.description}" deleted',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(context).primaryColor,
                                   ),
                                 );
                               }
@@ -228,9 +248,8 @@ class HomePageState extends State<HomePage> {
                                 ),
                               ),
                               subtitle: Text(
-                                DateFormat('${expense.category}\ndd/MM/yyyy')
-                                    .format(expense.date), // Format date
-                              ),
+                                  '${expense.category}\n${DateFormat('dd/MM/yyyy').format(expense.date) // Format date
+                                  }'),
                               trailing: Text(
                                 expense.type == 'income'
                                     ? '+\$${expense.amount.toStringAsFixed(2)}'

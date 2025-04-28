@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'auth_event.dart';
@@ -20,11 +20,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (response.user != null) {
           emit(AuthSuccess());
         } else {
-          print('eoorrr');
           emit(AuthError(message: 'Sign up failed!'));
         }
       } catch (e) {
-        print(e.toString());
         emit(AuthError(message: e.toString()));
       }
     });
@@ -43,7 +41,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthError(message: 'Sign in failed'));
         }
       } catch (e) {
-        print(e.toString());
         emit(AuthError(message: e.toString()));
       }
     });
@@ -72,7 +69,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (data.session == null) {
           emit(AuthUnauthenticated());
         } else {
-          emit(AuthAuthenticated(user: data.session!.user));
+          emit(AuthAuthenticated());
         }
       });
     });

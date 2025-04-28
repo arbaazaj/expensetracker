@@ -25,7 +25,7 @@ class Expense extends Equatable {
       userId: json['user_id'] as String,
       amount: (json['amount'] as num).toDouble(),
       type: json['type'] as String,
-      category: json['category'].toString(),
+      category: json['category'] ?? 'Unknown',
       description: json['description'] as String?,
       date: DateTime.parse(json['date'] as String),
     );
@@ -37,7 +37,7 @@ class Expense extends Equatable {
       'user_id': userId,
       'amount': amount,
       'type': type,
-      'category': category.toString(),
+      'category': category,
       'description': description,
       'date': date.toIso8601String(),
     };
