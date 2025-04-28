@@ -41,6 +41,7 @@ dependencies:
   supabase_flutter: any
   flutter_dotenv: any
   flutter_bloc: any
+  flutter_launcher_icons: ^0.14.3
   equatable: any
   intl: any
 
